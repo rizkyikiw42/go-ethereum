@@ -58,7 +58,7 @@ type jsonrpcSubscriptionNotification struct {
 	Params  subscriptionResultEnc `json:"params"`
 }
 
-// A value of this type can a JSON-RPC request, notification, successful response or
+// A value of this type can be a JSON-RPC request, notification, successful response or
 // error response. Which one it is depends on the fields.
 type jsonrpcMessage struct {
 	Version string          `json:"jsonrpc,omitempty"`
@@ -145,7 +145,7 @@ type jsonError struct {
 
 func (err *jsonError) Error() string {
 	if err.Message == "" {
-		return fmt.Sprintf("json-rpc error %d", err.Code)
+		return fmt.Sprintf("JSON-RPC error %d", err.Code)
 	}
 	return err.Message
 }
@@ -252,11 +252,18 @@ func (c *jsonCodec) writeJSON(ctx context.Context, v interface{}, isErrorRespons
 	c.encMu.Lock()
 	defer c.encMu.Unlock()
 
+	// Early return if context already canceled/expired to avoid unnecessary writes.
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return ctxErr
+	}
+
 	deadline, ok := ctx.Deadline()
 	if !ok {
 		deadline = time.Now().Add(defaultWriteTimeout)
 	}
-	c.conn.SetWriteDeadline(deadline)
+	if err := c.conn.SetWriteDeadline(deadline); err != nil {
+		return fmt.Errorf("failed to set write deadline: %w", err)
+	}
 	return c.encode(v, isErrorResponse)
 }
 
