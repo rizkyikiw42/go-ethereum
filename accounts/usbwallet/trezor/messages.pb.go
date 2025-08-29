@@ -1347,7 +1347,7 @@ func file_messages_proto_init() {
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
-			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
+			GoPackagePath: reflect.TypeFor[x]().PkgPath(),
 			RawDescriptor: file_messages_proto_rawDesc,
 			NumEnums:      1,
 			NumMessages:   0,
